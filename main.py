@@ -39,10 +39,10 @@ if __name__ == '__main__':
             if event.type == pygame.QUIT:
                 is_running = False
 
-            screen.blit(background, (0, 0))
+        player_group.update(dt)
 
-            player_group.update(dt)
-            player_group.draw(screen)
+        screen.blit(background, (0, 0))
+        player_group.draw(screen)
 
-            pygame.display.update()
-            clock.tick(FPS)
+        pygame.display.update()
+        clock.tick(FPS)
