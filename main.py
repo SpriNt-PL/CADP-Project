@@ -30,18 +30,19 @@ player_group.add(Player(300, 300))
 
 is_running = True 
 
-while is_running:
-    dt = clock.tick(60) / 1000
+if __name__ == '__main__':
+    while is_running:
+        dt = clock.tick(60) / 1000
 
-    for event in pygame.event.get():
+        for event in pygame.event.get():
 
-        if event.type == pygame.QUIT:
-            is_running = False
+            if event.type == pygame.QUIT:
+                is_running = False
 
-        screen.blit(background, (0, 0))
+            screen.blit(background, (0, 0))
 
-        player_group.update(dt)
-        player_group.draw(screen)
+            player_group.update(dt)
+            player_group.draw(screen)
 
-        pygame.display.update()
-        clock.tick(60)
+            pygame.display.update()
+            clock.tick(60)
