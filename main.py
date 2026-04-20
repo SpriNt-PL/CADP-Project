@@ -11,17 +11,19 @@ WHITE_COLOR = (250, 250, 250)
 GRAY_COLOR = (61, 61, 59)
 BACKGROUND_COLOR = GRAY_COLOR
 
+# Window initialization
 pygame.init()
 screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
 pygame.display.set_caption('Shooter game')
 
 clock = pygame.time.Clock()
 
+# Background 
 background = pygame.Surface(screen.get_size())
 background = background.convert()
 background.fill(BACKGROUND_COLOR)
 
-
+# Players
 player_group = pygame.sprite.GroupSingle()
 player_group.add(Player(300, 300))
 
