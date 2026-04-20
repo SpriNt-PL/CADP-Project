@@ -24,13 +24,14 @@ background = background.convert()
 background.fill(BACKGROUND_COLOR)
 
 # Players
-player_group = pygame.sprite.GroupSingle()
+player_group = pygame.sprite.GroupSingle() # Ultimately we will use .Group when there will be more than one player
 player_group.add(Player(300, 300))
 
 
 is_running = True 
 
 while is_running:
+    dt = clock.tick(60) / 1000
 
     for event in pygame.event.get():
 
@@ -39,6 +40,7 @@ while is_running:
 
         screen.blit(background, (0, 0))
 
+        player_group.update(dt)
         player_group.draw(screen)
 
         pygame.display.update()
