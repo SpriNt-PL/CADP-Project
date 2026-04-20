@@ -1,6 +1,9 @@
 import pygame
 from player import Player
 from object import Object
+from Enemy import Enemy
+from concurrent.futures import ThreadPoolExecutor
+import threading
 
 WINDOW_WIDTH = 1200
 WINDOW_HEIGHT = 800
@@ -26,8 +29,6 @@ background.fill(BACKGROUND_COLOR)
 
 # Bushes
 bushes_group = pygame.sprite.Group()
-
-# Manually place a few bushes at specific world coordinates
 bushes_group.add(Object(100, 100))
 bushes_group.add(Object(500, 500))
 bushes_group.add(Object(-500, 800))
@@ -37,13 +38,28 @@ player = Player(300, 300)
 player_group = pygame.sprite.GroupSingle() # Ultimately we will use .Group when there will be more than one player
 player_group.add(player)
 
+# Enemies
+enemies_group = pygame.sprite.Group()
+enemies_group.add(Enemy(100, 100, player))
+enemies_group.add(Enemy(500, 100, player))
+enemies_group.add(Enemy(100, 500, player))
+
 
 is_running = True
 
 def drawWithOffset(screen, camera_pos, group):
     for sprite in group:
         screen_pos = sprite.pos - camera_pos
-        screen.blit(sprite.image, sprite.image.get_rect(center=screen_pos))
+        if hasattr(sprite, 'rotation'):
+            rotated_image = pygame.transform.rotate(sprite.image, sprite.rotation)
+            new_rect = rotated_image.get_rect(center=screen_pos)
+            screen.blit(rotated_image, new_rect)
+        else:
+            screen.blit(sprite.image, sprite.image.get_rect(center=screen_pos))
+
+# multi threading test
+executor = ThreadPoolExecutor(max_workers=4)
+enemy_lock = threading.Lock()
 
 if __name__ == '__main__':
     while is_running:
@@ -60,6 +76,10 @@ if __name__ == '__main__':
             player.pos.x - HALF_WIDTH,
             player.pos.y - HALF_HEIGHT
         )
+        #enemies_group.update(dt)
+        #thread pool parrael execution
+        executor.submit(enemies_group.update, dt, enemy_lock)
+        drawWithOffset(screen, camera_pos, enemies_group)
         drawWithOffset(screen, camera_pos, player_group)
         drawWithOffset(screen, camera_pos, bushes_group)
 
