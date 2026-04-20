@@ -32,7 +32,7 @@ is_running = True
 
 if __name__ == '__main__':
     while is_running:
-        dt = clock.tick(60) / 1000
+        dt = clock.tick(FPS) / 1000
 
         for event in pygame.event.get():
 
@@ -45,4 +45,4 @@ if __name__ == '__main__':
             player_group.draw(screen)
 
             pygame.display.update()
-            clock.tick(60)
+            clock.tick(FPS)
