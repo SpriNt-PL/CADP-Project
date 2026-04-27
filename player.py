@@ -1,4 +1,5 @@
 import pygame
+import math
 from entity import Entity
 
 class Player(Entity):
@@ -12,6 +13,8 @@ class Player(Entity):
 
         self.velocity = 600
         self.direction = pygame.Vector2(0, 0)
+
+        self.rotation = 0
 
     def input(self):
         keys = pygame.key.get_pressed()
@@ -28,6 +31,7 @@ class Player(Entity):
 
         if self.direction.magnitude() > 0:
             self.direction = self.direction.normalize()
+            self.rotation = math.degrees(math.atan2(-self.direction.y, self.direction.x))
 
     def update(self, dt):
         self.input()
