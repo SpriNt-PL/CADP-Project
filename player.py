@@ -1,16 +1,11 @@
 import pygame
+from entity import Entity
 
-class Player(pygame.sprite.Sprite):
-
+class Player(Entity):
     def __init__(self, x, y):
-        super().__init__()
-
-        self.image = pygame.image.load('assets/Player.png')
-        self.rect = self.image.get_rect(center=(x, y))
-
-        self.pos = pygame.Vector2(self.rect.center)
-
+        super().__init__(x, y, 'assets/Player.png')
         self.velocity = 600
+        self.direction = pygame.Vector2(0, 0)
 
     def input(self):
         keys = pygame.key.get_pressed()
@@ -28,9 +23,7 @@ class Player(pygame.sprite.Sprite):
         if self.direction.magnitude() > 0:
             self.direction = self.direction.normalize()
 
-
     def update(self, dt):
         self.input()
-
         self.pos += self.direction * self.velocity * dt
         self.rect.center = self.pos
