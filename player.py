@@ -2,6 +2,8 @@ import pygame
 import math
 from entity import Entity
 
+import constants
+
 class Player(Entity):
     def __init__(self, x, y):
         super().__init__(x, y, 'assets/Player.png')
@@ -36,4 +38,13 @@ class Player(Entity):
     def update(self, dt):
         self.input()
         self.pos += self.direction * self.velocity * dt
+
+        # Prevent from going past map border
+        half_w = self.rect.width // 2
+        half_h = self.rect.height // 2
+        if self.pos.x < half_w: self.pos.x = half_w
+        if self.pos.x > constants.MAP_WIDTH - half_w: self.pos.x = constants.MAP_WIDTH - half_w
+        if self.pos.y < half_h: self.pos.y = half_h
+        if self.pos.y > constants.MAP_HEIGHT - half_h: self.pos.y = constants.MAP_HEIGHT - half_h
+
         self.rect.center = self.pos
