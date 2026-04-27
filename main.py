@@ -4,6 +4,7 @@ from object import Object
 from Enemy import Enemy
 from concurrent.futures import ThreadPoolExecutor
 import threading
+import constants
 
 WINDOW_WIDTH = 1200
 WINDOW_HEIGHT = 800
@@ -82,6 +83,12 @@ if __name__ == '__main__':
         drawWithOffset(screen, camera_pos, enemies_group)
         drawWithOffset(screen, camera_pos, player_group)
         drawWithOffset(screen, camera_pos, bushes_group)
+
+        # Render map boarders
+        map_rect = pygame.Rect(0, 0, constants.MAP_WIDTH, constants.MAP_HEIGHT)
+        render_rect = map_rect.copy()
+        render_rect.topleft -= camera_pos
+        pygame.draw.rect(screen, (255, 0, 0), render_rect, 5)
 
         pygame.display.update()
         clock.tick(60)
