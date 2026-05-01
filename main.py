@@ -19,6 +19,9 @@ p2 = Player(500, 400, KEYS_P2)
 player_img = pygame.image.load('assets/Player.png').convert_alpha()
 player_img = pygame.transform.smoothscale(player_img, (player_img.get_width()//2, player_img.get_height()//2))
 
+enemy_img = pygame.image.load('assets/enemy.png').convert_alpha()
+enemy_img = pygame.transform.smoothscale(enemy_img, (enemy_img.get_width()//2, enemy_img.get_height()//2))
+
 def draw_sprite(image, pos, rotation, camera_pos):
     screen_pos = pygame.Vector2(pos) - camera_pos
     rotated = pygame.transform.rotate(image, rotation)
@@ -57,6 +60,9 @@ while running:
     if world_data:
         draw_sprite(player_img, p1.pos, p1.rotation, camera_pos)
         draw_sprite(player_img, p2.pos, p2.rotation, camera_pos)
+
+        for e in world_data["enemies"]:
+            draw_sprite(enemy_img, e["pos"], e["rot"], camera_pos)
 
     map_rect = pygame.Rect(0, 0, constants.MAP_WIDTH, constants.MAP_HEIGHT)
     map_rect.topleft -= camera_pos
