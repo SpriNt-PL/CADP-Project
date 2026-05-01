@@ -1,95 +1,72 @@
 import pygame
 from player import Player
-from object import Object
-from Enemy import Enemy
-from concurrent.futures import ThreadPoolExecutor
-import threading
+from network import Network
 import constants
 
-WINDOW_WIDTH = 1200
-WINDOW_HEIGHT = 800
-HALF_WIDTH = WINDOW_WIDTH // 2
-HALF_HEIGHT = WINDOW_HEIGHT // 2
-
-WHITE_COLOR = (250, 250, 250)
-GRAY_COLOR = (61, 61, 59)
-BACKGROUND_COLOR = GRAY_COLOR
-
-# Window initialization
+# Inicjalizacja Pygame
 pygame.init()
-screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
-pygame.display.set_caption('Shooter game')
+screen = pygame.display.set_mode((constants.WINDOW_WIDTH, constants.WINDOW_HEIGHT))
 clock = pygame.time.Clock()
 
-clock = pygame.time.Clock()
+# Połączenie z siecią
+net = Network()
+if net.id is None:
+    print("Nie można połączyć się z serwerem!")
+    exit()
 
-# Background
-background = pygame.Surface(screen.get_size())
-background = background.convert()
-background.fill(BACKGROUND_COLOR)
+pygame.display.set_caption(f"Gracz {net.id}")
 
-# Bushes
-bushes_group = pygame.sprite.Group()
-bushes_group.add(Object(100, 100))
-bushes_group.add(Object(500, 500))
-bushes_group.add(Object(-500, 800))
+# Lokalny gracz
+my_player = Player(400 + (net.id * 100), 400, net.id)
 
-# Players
-player = Player(300, 300)
-player_group = pygame.sprite.GroupSingle() # Ultimately we will use .Group when there will be more than one player
-player_group.add(player)
+# Załadowanie grafik dla innych obiektów (żeby ich nie tworzyć co klatkę)
+other_player_img = pygame.image.load('assets/Player.png').convert_alpha()
+other_player_img = pygame.transform.smoothscale(other_player_img, (other_player_img.get_width()//2, other_player_img.get_height()//2))
 
-# Enemies
-enemies_group = pygame.sprite.Group()
-enemies_group.add(Enemy(100, 100, player))
-enemies_group.add(Enemy(500, 100, player))
-enemies_group.add(Enemy(100, 500, player))
+enemy_img = pygame.image.load('assets/enemy.png').convert_alpha()
+enemy_img = pygame.transform.smoothscale(enemy_img, (enemy_img.get_width()//2, enemy_img.get_height()//2))
 
+def draw_sprite(image, pos, rotation, camera_pos):
+    screen_pos = pygame.Vector2(pos) - camera_pos
+    rotated = pygame.transform.rotate(image, rotation)
+    rect = rotated.get_rect(center=screen_pos)
+    screen.blit(rotated, rect)
 
-is_running = True
+running = True
+while running:
+    dt = clock.tick(60) / 1000
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT: running = False
 
-def drawWithOffset(screen, camera_pos, group):
-    for sprite in group:
-        screen_pos = sprite.pos - camera_pos
-        if hasattr(sprite, 'rotation'):
-            rotated_image = pygame.transform.rotate(sprite.image, sprite.rotation)
-            new_rect = rotated_image.get_rect(center=screen_pos)
-            screen.blit(rotated_image, new_rect)
-        else:
-            screen.blit(sprite.image, sprite.image.get_rect(center=screen_pos))
+    # 1. Update ruchu
+    my_player.update(dt)
 
-# multi threading test
-executor = ThreadPoolExecutor(max_workers=4)
-enemy_lock = threading.Lock()
+    # 2. Synchronizacja z serwerem
+    my_data = {"pos": [my_player.pos.x, my_player.pos.y], "rot": my_player.rotation}
+    world_data = net.send(my_data)
 
-if __name__ == '__main__':
-    while is_running:
-        dt = clock.tick(60) / 1000
+    # 3. Kamera (śledzi mojego gracza)
+    camera_pos = pygame.Vector2(my_player.pos.x - 600, my_player.pos.y - 400)
 
-        for event in pygame.event.get():
+    # 4. Renderowanie
+    screen.fill((61, 61, 59))
 
-            if event.type == pygame.QUIT:
-                is_running = False
+    if world_data:
+        # Rysuj wszystkich graczy z sieci
+        for p_id, p_info in world_data["players"].items():
+            # Jeśli to ja, używam mojego obiektu, jeśli ktoś inny - grafiki "other"
+            img = my_player.image if int(p_id) == net.id else other_player_img
+            draw_sprite(img, p_info["pos"], p_info["rot"], camera_pos)
+        
+        # Rysuj przeciwników
+        for e_info in world_data["enemies"]:
+            draw_sprite(enemy_img, e_info["pos"], e_info["rot"], camera_pos)
 
-        screen.blit(background, (0, 0))
-        player_group.update(dt)
-        camera_pos = pygame.Vector2(
-            player.pos.x - HALF_WIDTH,
-            player.pos.y - HALF_HEIGHT
-        )
-        #enemies_group.update(dt)
-        #thread pool parrael execution
-        executor.submit(enemies_group.update, dt, enemy_lock)
-        drawWithOffset(screen, camera_pos, enemies_group)
-        drawWithOffset(screen, camera_pos, player_group)
-        drawWithOffset(screen, camera_pos, bushes_group)
+    # Granice mapy
+    map_rect = pygame.Rect(0, 0, constants.MAP_WIDTH, constants.MAP_HEIGHT)
+    map_rect.topleft -= camera_pos
+    pygame.draw.rect(screen, (255, 0, 0), map_rect, 5)
 
-        # Render map boarders
-        map_rect = pygame.Rect(0, 0, constants.MAP_WIDTH, constants.MAP_HEIGHT)
-        render_rect = map_rect.copy()
-        render_rect.topleft -= camera_pos
-        pygame.draw.rect(screen, (255, 0, 0), render_rect, 5)
+    pygame.display.update()
 
-        pygame.display.update()
-        clock.tick(60)
-
+pygame.quit()
