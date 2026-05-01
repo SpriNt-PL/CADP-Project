@@ -9,6 +9,7 @@ s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.bind((SERVER_IP, PORT))
 s.listen()
 
+# Dictionary storing all positions and rotations of players and enemy
 world_state = {
     "p1": {"pos": [300, 400], "rot": 0},
     "p2": {"pos": [500, 400], "rot": 0},
@@ -19,6 +20,7 @@ world_state = {
     ]
 }
 
+# Handling enemy AI
 def enemy_ai_logic():
     clock = pygame.time.Clock()
     enemy_speed = 150
@@ -32,9 +34,11 @@ def enemy_ai_logic():
         for enemy in world_state["enemies"]:
             e_pos = pygame.Vector2(enemy["pos"])
             
+            # Getting the nearest player to the enemy
             target = min(targets, key=lambda t: e_pos.distance_to(t))
             
             direction = (target - e_pos)
+            # Go to the nearest player
             if direction.length() > 5:
                 direction = direction.normalize()
                 e_pos += direction * enemy_speed * dt
@@ -42,6 +46,7 @@ def enemy_ai_logic():
                 enemy["pos"] = [e_pos.x, e_pos.y]
                 enemy["rot"] = pygame.Vector2(1, 0).angle_to(direction)
 
+# Creating thread for each player
 def threaded_client(conn, client_id):
     conn.send(str.encode(str(client_id)))
     while True:
