@@ -3,28 +3,21 @@ from player import Player
 from network import Network
 import constants
 
-# Inicjalizacja Pygame
 pygame.init()
 screen = pygame.display.set_mode((constants.WINDOW_WIDTH, constants.WINDOW_HEIGHT))
 clock = pygame.time.Clock()
 
-# Połączenie z siecią
 net = Network()
-if net.id is None:
-    print("Nie można połączyć się z serwerem!")
-    exit()
+client_id = net.id
 
-pygame.display.set_caption(f"Gracz {net.id}")
+KEYS_P1 = {'up': pygame.K_w, 'down': pygame.K_s, 'left': pygame.K_a, 'right': pygame.K_d}
+KEYS_P2 = {'up': pygame.K_UP, 'down': pygame.K_DOWN, 'left': pygame.K_LEFT, 'right': pygame.K_RIGHT}
 
-# Lokalny gracz
-my_player = Player(400 + (net.id * 100), 400, net.id)
+p1 = Player(300, 400, KEYS_P1)
+p2 = Player(500, 400, KEYS_P2)
 
-# Załadowanie grafik dla innych obiektów (żeby ich nie tworzyć co klatkę)
-other_player_img = pygame.image.load('assets/Player.png').convert_alpha()
-other_player_img = pygame.transform.smoothscale(other_player_img, (other_player_img.get_width()//2, other_player_img.get_height()//2))
-
-enemy_img = pygame.image.load('assets/enemy.png').convert_alpha()
-enemy_img = pygame.transform.smoothscale(enemy_img, (enemy_img.get_width()//2, enemy_img.get_height()//2))
+player_img = pygame.image.load('assets/Player.png').convert_alpha()
+player_img = pygame.transform.smoothscale(player_img, (player_img.get_width()//2, player_img.get_height()//2))
 
 def draw_sprite(image, pos, rotation, camera_pos):
     screen_pos = pygame.Vector2(pos) - camera_pos
@@ -38,31 +31,33 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT: running = False
 
-    # 1. Update ruchu
-    my_player.update(dt)
+    if pygame.key.get_focused():
+        pygame.display.set_caption(f"Shooter game - Client {client_id} [ACTIVE]")
+        p1.update(dt)
+        p2.update(dt)
 
-    # 2. Synchronizacja z serwerem
-    my_data = {"pos": [my_player.pos.x, my_player.pos.y], "rot": my_player.rotation}
-    world_data = net.send(my_data)
+        world_data = net.send([
+            {"pos": [p1.pos.x, p1.pos.y], "rot": p1.rotation},
+            {"pos": [p2.pos.x, p2.pos.y], "rot": p2.rotation}
+        ])
+    else:
+        pygame.display.set_caption(f"Shooter game - Client {client_id} [PREVIEW]")
+        world_data = net.send("get")
+        if world_data:
+            p1.pos.x, p1.pos.y = world_data["p1"]["pos"]
+            p1.rotation = world_data["p1"]["rot"]
+            p2.pos.x, p2.pos.y = world_data["p2"]["pos"]
+            p2.rotation = world_data["p2"]["rot"]
 
-    # 3. Kamera (śledzi mojego gracza)
-    camera_pos = pygame.Vector2(my_player.pos.x - 600, my_player.pos.y - 400)
 
-    # 4. Renderowanie
+    target = p1 if client_id == 0 else p2
+    camera_pos = pygame.Vector2(target.pos.x - 600, target.pos.y - 400)
+
     screen.fill((61, 61, 59))
-
     if world_data:
-        # Rysuj wszystkich graczy z sieci
-        for p_id, p_info in world_data["players"].items():
-            # Jeśli to ja, używam mojego obiektu, jeśli ktoś inny - grafiki "other"
-            img = my_player.image if int(p_id) == net.id else other_player_img
-            draw_sprite(img, p_info["pos"], p_info["rot"], camera_pos)
-        
-        # Rysuj przeciwników
-        for e_info in world_data["enemies"]:
-            draw_sprite(enemy_img, e_info["pos"], e_info["rot"], camera_pos)
+        draw_sprite(player_img, p1.pos, p1.rotation, camera_pos)
+        draw_sprite(player_img, p2.pos, p2.rotation, camera_pos)
 
-    # Granice mapy
     map_rect = pygame.Rect(0, 0, constants.MAP_WIDTH, constants.MAP_HEIGHT)
     map_rect.topleft -= camera_pos
     pygame.draw.rect(screen, (255, 0, 0), map_rect, 5)
