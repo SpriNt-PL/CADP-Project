@@ -1,95 +1,73 @@
 import pygame
 from player import Player
-from object import Object
-from Enemy import Enemy
-from concurrent.futures import ThreadPoolExecutor
-import threading
+from network import Network
 import constants
 
-WINDOW_WIDTH = 1200
-WINDOW_HEIGHT = 800
-HALF_WIDTH = WINDOW_WIDTH // 2
-HALF_HEIGHT = WINDOW_HEIGHT // 2
-
-WHITE_COLOR = (250, 250, 250)
-GRAY_COLOR = (61, 61, 59)
-BACKGROUND_COLOR = GRAY_COLOR
-
-# Window initialization
 pygame.init()
-screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
-pygame.display.set_caption('Shooter game')
+screen = pygame.display.set_mode((constants.WINDOW_WIDTH, constants.WINDOW_HEIGHT))
 clock = pygame.time.Clock()
 
-clock = pygame.time.Clock()
+net = Network()
+client_id = net.id
 
-# Background
-background = pygame.Surface(screen.get_size())
-background = background.convert()
-background.fill(BACKGROUND_COLOR)
+KEYS_P1 = {'up': pygame.K_w, 'down': pygame.K_s, 'left': pygame.K_a, 'right': pygame.K_d}
+KEYS_P2 = {'up': pygame.K_UP, 'down': pygame.K_DOWN, 'left': pygame.K_LEFT, 'right': pygame.K_RIGHT}
 
-# Bushes
-bushes_group = pygame.sprite.Group()
-bushes_group.add(Object(100, 100))
-bushes_group.add(Object(500, 500))
-bushes_group.add(Object(-500, 800))
+p1 = Player(300, 400, KEYS_P1)
+p2 = Player(500, 400, KEYS_P2)
 
-# Players
-player = Player(300, 300)
-player_group = pygame.sprite.GroupSingle() # Ultimately we will use .Group when there will be more than one player
-player_group.add(player)
+player_img = pygame.image.load('assets/Player.png').convert_alpha()
+player_img = pygame.transform.smoothscale(player_img, (player_img.get_width()//2, player_img.get_height()//2))
 
-# Enemies
-enemies_group = pygame.sprite.Group()
-enemies_group.add(Enemy(100, 100, player))
-enemies_group.add(Enemy(500, 100, player))
-enemies_group.add(Enemy(100, 500, player))
+enemy_img = pygame.image.load('assets/enemy.png').convert_alpha()
+enemy_img = pygame.transform.smoothscale(enemy_img, (enemy_img.get_width()//2, enemy_img.get_height()//2))
+
+def draw_sprite(image, pos, rotation, camera_pos):
+    screen_pos = pygame.Vector2(pos) - camera_pos
+    rotated = pygame.transform.rotate(image, rotation)
+    rect = rotated.get_rect(center=screen_pos)
+    screen.blit(rotated, rect)
+
+running = True
+while running:
+    dt = clock.tick(60) / 1000
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT: running = False
+
+    if pygame.key.get_focused():
+        pygame.display.set_caption(f"Shooter game - Client {client_id} [ACTIVE]")
+        p1.update(dt)
+        p2.update(dt)
+
+        world_data = net.send([
+            {"pos": [p1.pos.x, p1.pos.y], "rot": p1.rotation},
+            {"pos": [p2.pos.x, p2.pos.y], "rot": p2.rotation}
+        ])
+    else:
+        pygame.display.set_caption(f"Shooter game - Client {client_id} [PREVIEW]")
+        world_data = net.send("get")
+        if world_data:
+            p1.pos.x, p1.pos.y = world_data["p1"]["pos"]
+            p1.rotation = world_data["p1"]["rot"]
+            p2.pos.x, p2.pos.y = world_data["p2"]["pos"]
+            p2.rotation = world_data["p2"]["rot"]
 
 
-is_running = True
+    target = p1 if client_id == 0 else p2
+    camera_pos = pygame.Vector2(target.pos.x - 600, target.pos.y - 400)
 
-def drawWithOffset(screen, camera_pos, group):
-    for sprite in group:
-        screen_pos = sprite.pos - camera_pos
-        if hasattr(sprite, 'rotation'):
-            rotated_image = pygame.transform.rotate(sprite.image, sprite.rotation)
-            new_rect = rotated_image.get_rect(center=screen_pos)
-            screen.blit(rotated_image, new_rect)
-        else:
-            screen.blit(sprite.image, sprite.image.get_rect(center=screen_pos))
+    screen.fill((61, 61, 59))
+    if world_data:
+        draw_sprite(player_img, p1.pos, p1.rotation, camera_pos)
+        draw_sprite(player_img, p2.pos, p2.rotation, camera_pos)
 
-# multi threading test
-executor = ThreadPoolExecutor(max_workers=4)
-enemy_lock = threading.Lock()
+        for e in world_data["enemies"]:
+            draw_sprite(enemy_img, e["pos"], e["rot"], camera_pos)
 
-if __name__ == '__main__':
-    while is_running:
-        dt = clock.tick(60) / 1000
+    map_rect = pygame.Rect(0, 0, constants.MAP_WIDTH, constants.MAP_HEIGHT)
+    map_rect.topleft -= camera_pos
+    pygame.draw.rect(screen, (255, 0, 0), map_rect, 5)
 
-        for event in pygame.event.get():
+    pygame.display.update()
 
-            if event.type == pygame.QUIT:
-                is_running = False
-
-        screen.blit(background, (0, 0))
-        player_group.update(dt)
-        camera_pos = pygame.Vector2(
-            player.pos.x - HALF_WIDTH,
-            player.pos.y - HALF_HEIGHT
-        )
-        #enemies_group.update(dt)
-        #thread pool parrael execution
-        executor.submit(enemies_group.update, dt, enemy_lock)
-        drawWithOffset(screen, camera_pos, enemies_group)
-        drawWithOffset(screen, camera_pos, player_group)
-        drawWithOffset(screen, camera_pos, bushes_group)
-
-        # Render map boarders
-        map_rect = pygame.Rect(0, 0, constants.MAP_WIDTH, constants.MAP_HEIGHT)
-        render_rect = map_rect.copy()
-        render_rect.topleft -= camera_pos
-        pygame.draw.rect(screen, (255, 0, 0), render_rect, 5)
-
-        pygame.display.update()
-        clock.tick(60)
-
+pygame.quit()
