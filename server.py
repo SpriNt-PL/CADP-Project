@@ -3,6 +3,8 @@ import threading
 import json
 import pygame
 
+import constants
+
 SERVER_IP = "0.0.0.0"
 PORT = 5555
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -24,6 +26,8 @@ world_state = {
 def enemy_ai_logic():
     clock = pygame.time.Clock()
     enemy_speed = 150
+
+    wall_rects = constants.get_wall_rects()
     
     while True:
         dt = clock.tick(60) / 1000
@@ -33,16 +37,24 @@ def enemy_ai_logic():
         
         for enemy in world_state["enemies"]:
             e_pos = pygame.Vector2(enemy["pos"])
-            
-            # Getting the nearest player to the enemy
             target = min(targets, key=lambda t: e_pos.distance_to(t))
-            
             direction = (target - e_pos)
-            # Go to the nearest player
+            
             if direction.length() > 5:
                 direction = direction.normalize()
-                e_pos += direction * enemy_speed * dt
                 
+                temp_rect = pygame.Rect(0, 0, 40, 40)
+                
+                new_x = e_pos.x + direction.x * enemy_speed * dt
+                temp_rect.center = (new_x, e_pos.y)
+                if not any(temp_rect.colliderect(w) for w in wall_rects):
+                    e_pos.x = new_x
+                
+                new_y = e_pos.y + direction.y * enemy_speed * dt
+                temp_rect.center = (e_pos.x, new_y)
+                if not any(temp_rect.colliderect(w) for w in wall_rects):
+                    e_pos.y = new_y
+
                 enemy["pos"] = [e_pos.x, e_pos.y]
                 enemy["rot"] = pygame.Vector2(1, 0).angle_to(direction)
 

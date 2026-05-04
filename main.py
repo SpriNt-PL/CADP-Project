@@ -64,6 +64,12 @@ while running:
         for e in world_data["enemies"]:
             draw_sprite(enemy_img, e["pos"], e["rot"], camera_pos)
 
+        for wall_data in constants.WALLS:
+            wall_rect = pygame.Rect(wall_data)
+            render_pos = wall_rect.topleft - camera_pos
+            pygame.draw.rect(screen, (40, 40, 40), (render_pos.x, render_pos.y, wall_rect.width, wall_rect.height))
+            pygame.draw.rect(screen, (100, 100, 100), (render_pos.x, render_pos.y, wall_rect.width, wall_rect.height), 2)
+
     map_rect = pygame.Rect(0, 0, constants.MAP_WIDTH, constants.MAP_HEIGHT)
     map_rect.topleft -= camera_pos
     pygame.draw.rect(screen, (255, 0, 0), map_rect, 5)
