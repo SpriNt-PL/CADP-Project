@@ -19,8 +19,21 @@ class Player(Entity):
         if keys[self.key_config['right']]: direction.x = 1
 
         if direction.length() > 0:
-            direction = direction.normalize()
-            self.pos += direction * self.velocity * dt
+            old_x = self.pos.x
+            self.pos.x += direction.x * self.velocity * dt
+            self.rect.centerx = self.pos.x
+            for wall in constants.get_wall_rects():
+                if self.rect.colliderect(wall):
+                    self.pos.x = old_x
+                    break
+            
+            old_y = self.pos.y
+            self.pos.y += direction.y * self.velocity * dt
+            self.rect.centery = self.pos.y
+            for wall in constants.get_wall_rects():
+                if self.rect.colliderect(wall):
+                    self.pos.y = old_y
+                    break
             self.rotation = math.degrees(math.atan2(-direction.y, direction.x))
         
         self.pos.x = max(25, min(self.pos.x, constants.MAP_WIDTH - 25))
