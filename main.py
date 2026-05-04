@@ -7,6 +7,8 @@ pygame.init()
 screen = pygame.display.set_mode((constants.WINDOW_WIDTH, constants.WINDOW_HEIGHT))
 clock = pygame.time.Clock()
 
+last_valid_data = None
+
 net = Network()
 client_id = net.id
 
@@ -33,6 +35,7 @@ def draw_sprite(image, pos, rotation, camera_pos):
 
 running = True
 while running:
+    target = p1 if client_id == 0 else p2
     dt = clock.tick(60) / 1000
     for event in pygame.event.get():
         if event.type == pygame.QUIT: running = False
@@ -56,6 +59,8 @@ while running:
     else:
         pygame.display.set_caption(f"Shooter game - Client {client_id} [PREVIEW]")
         world_data = net.send("get")
+        if world_data is None:
+            print("Network Buffer Overflow or Connection Issue!")
         if world_data:
             p1.pos.x, p1.pos.y = world_data["p1"]["pos"]
             p1.rotation = world_data["p1"]["rot"]

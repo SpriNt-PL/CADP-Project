@@ -8,7 +8,6 @@ from projectile import Projectile
 
 PROJ_SPEED = 800
 WALL_RECTS = constants.get_wall_rects()
-SERVER_CLOCK = pygame.time.Clock()
 
 SERVER_IP = "0.0.0.0"
 PORT = 5555
@@ -30,34 +29,35 @@ world_state = {
     "projectiles": []
 }
 
+
 # Handling enemy AI
 def enemy_ai_logic():
     clock = pygame.time.Clock()
     enemy_speed = 150
 
     wall_rects = constants.get_wall_rects()
-    
+
     while True:
         dt = clock.tick(60) / 1000
-        
-        targets = [pygame.Vector2(world_state["p1"]["pos"]), 
+
+        targets = [pygame.Vector2(world_state["p1"]["pos"]),
                    pygame.Vector2(world_state["p2"]["pos"])]
-        
+
         for enemy in world_state["enemies"]:
             e_pos = pygame.Vector2(enemy["pos"])
             target = min(targets, key=lambda t: e_pos.distance_to(t))
             direction = (target - e_pos)
-            
+
             if direction.length() > 5:
                 direction = direction.normalize()
-                
+
                 temp_rect = pygame.Rect(0, 0, 40, 40)
-                
+
                 new_x = e_pos.x + direction.x * enemy_speed * dt
                 temp_rect.center = (new_x, e_pos.y)
                 if not any(temp_rect.colliderect(w) for w in wall_rects):
                     e_pos.x = new_x
-                
+
                 new_y = e_pos.y + direction.y * enemy_speed * dt
                 temp_rect.center = (e_pos.x, new_y)
                 if not any(temp_rect.colliderect(w) for w in wall_rects):
@@ -76,18 +76,18 @@ def spawn_projectile(player_id):
         direction = (pygame.Vector2(target_enemy["pos"]) - player_pos)
 
         if direction.length() > 0:
-            # CREATE THE OBJECT HERE
             new_proj = Projectile(player_pos.x, player_pos.y, direction.normalize())
             server_projectiles.append(new_proj)
 
-last_shot_time = {0: 0, 1: 0}  # Cooldown tracker for Player 0 and Player 1
+
+last_shot_time = {0: 0, 1: 0}
 
 
 def threaded_client(conn, client_id):
     conn.send(str.encode(str(client_id)))
     while True:
         try:
-            data = conn.recv(4096).decode('utf-8')
+            data = conn.recv(16384).decode('utf-8')
             if not data: break
 
             received = json.loads(data)
@@ -106,6 +106,7 @@ def threaded_client(conn, client_id):
         except:
             break
     conn.close()
+
 
 def update_projectile_chunk(chunk, dt, walls):
     for proj in chunk:
@@ -144,7 +145,6 @@ def manage_projectiles():
 
 
 threading.Thread(target=manage_projectiles, daemon=True).start()
-
 threading.Thread(target=enemy_ai_logic, daemon=True).start()
 
 print("Server is running. Waiting for players.")
