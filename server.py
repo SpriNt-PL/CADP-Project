@@ -19,7 +19,8 @@ world_state = {
         {"pos": [100, 100], "rot": 0},
         {"pos": [1800, 100], "rot": 0},
         {"pos": [1000, 1800], "rot": 0}
-    ]
+    ],
+    "projectiles": []
 }
 
 # Handling enemy AI

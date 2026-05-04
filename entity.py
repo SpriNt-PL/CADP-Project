@@ -9,3 +9,6 @@ class Entity(pygame.sprite.Sprite):
         
         self.rect = self.image.get_rect(center=(x, y))
         self.pos = pygame.Vector2(self.rect.center)
+
+    def check_collision(self, other_rect):
+        return self.rect.colliderect(other_rect)
