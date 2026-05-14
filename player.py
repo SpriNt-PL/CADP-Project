@@ -19,19 +19,25 @@ class Player(Entity):
         if keys[self.key_config['right']]: direction.x = 1
 
         if direction.length() > 0:
+            hitbox_offset = -60
+
             old_x = self.pos.x
             self.pos.x += direction.x * self.velocity * dt
             self.rect.centerx = self.pos.x
+
+            player_hitbox = self.rect.inflate(hitbox_offset, hitbox_offset)
             for wall in constants.get_wall_rects():
-                if self.rect.colliderect(wall):
+                if player_hitbox.colliderect(wall):
                     self.pos.x = old_x
                     break
             
             old_y = self.pos.y
             self.pos.y += direction.y * self.velocity * dt
             self.rect.centery = self.pos.y
+
+            player_hitbox = self.rect.inflate(hitbox_offset, hitbox_offset)
             for wall in constants.get_wall_rects():
-                if self.rect.colliderect(wall):
+                if player_hitbox.colliderect(wall):
                     self.pos.y = old_y
                     break
             self.rotation = math.degrees(math.atan2(-direction.y, direction.x))
