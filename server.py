@@ -5,6 +5,7 @@ import pygame
 import constants
 from concurrent.futures import ThreadPoolExecutor
 from projectile import Projectile
+import sys
 
 PROJ_SPEED = 800
 WALL_RECTS = constants.get_wall_rects()
@@ -14,6 +15,7 @@ PORT = 5555
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.bind((SERVER_IP, PORT))
 s.listen()
+s.settimeout(1.0)
 
 server_projectiles = []
 
@@ -27,7 +29,8 @@ world_state = {
         {"pos": [1000, 1800], "rot": 0}
     ],
     "projectiles": [],
-    "game_over": False
+    "game_over": False,
+    "server_shutdown": False
 }
 
 
@@ -151,9 +154,20 @@ def manage_projectiles():
 threading.Thread(target=manage_projectiles, daemon=True).start()
 threading.Thread(target=enemy_ai_logic, daemon=True).start()
 
-print("Server is running. Waiting for players.")
+print("Server is running. Waiting for players. Press Ctrl+C to stop.")
 curr_id = 0
-while True:
-    conn, addr = s.accept()
-    threading.Thread(target=threaded_client, args=(conn, curr_id)).start()
-    curr_id += 1
+try:
+    while True:
+        try:
+            conn, addr = s.accept()
+            threading.Thread(target=threaded_client, args=(conn, curr_id)).start()
+            curr_id += 1
+        except socket.timeout:
+            continue
+except KeyboardInterrupt:
+    print("\nShutting down the server...")
+
+    world_state["server_shutdown"] = True
+    pygame.time.wait(500)
+    s.close()
+    sys.exit(0)
