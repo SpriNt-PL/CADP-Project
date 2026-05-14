@@ -52,6 +52,15 @@ while running:
             p2.pos.x, p2.pos.y = world_data["p2"]["pos"]
             p2.rotation = world_data["p2"]["rot"]
 
+    if world_data is None:
+        print("Connection with the server lost")
+        running = False
+        continue
+
+    if world_data.get("game_over"):
+        print("Second player left. End of the game")
+        running = False
+        continue
 
     target = p1 if client_id == 0 else p2
     camera_pos = pygame.Vector2(target.pos.x - 600, target.pos.y - 400)

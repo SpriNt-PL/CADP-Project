@@ -19,7 +19,8 @@ world_state = {
         {"pos": [100, 100], "rot": 0},
         {"pos": [1800, 100], "rot": 0},
         {"pos": [1000, 1800], "rot": 0}
-    ]
+    ],
+    "game_over": False
 }
 
 # Handling enemy AI
@@ -73,6 +74,9 @@ def threaded_client(conn, client_id):
             
             conn.sendall(str.encode(json.dumps(world_state)))
         except: break
+
+    print(f"Player {client_id} left. Closing session...")
+    world_state["game_over"] = True
     conn.close()
 
 threading.Thread(target=enemy_ai_logic, daemon=True).start()
