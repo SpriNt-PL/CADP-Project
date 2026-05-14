@@ -17,5 +17,6 @@ class Network:
     def send(self, data):
         try:
             self.client.send(str.encode(json.dumps(data)))
-            return json.loads(self.client.recv(4096).decode())
-        except: return None
+            return json.loads(self.client.recv(16384).decode())
+        except:
+            return None

@@ -7,6 +7,8 @@ pygame.init()
 screen = pygame.display.set_mode((constants.WINDOW_WIDTH, constants.WINDOW_HEIGHT))
 clock = pygame.time.Clock()
 
+last_valid_data = None
+
 net = Network()
 client_id = net.id
 
@@ -19,6 +21,9 @@ p2 = Player(500, 400, KEYS_P2)
 player_img = pygame.image.load('assets/Player.png').convert_alpha()
 player_img = pygame.transform.smoothscale(player_img, (player_img.get_width()//2, player_img.get_height()//2))
 
+bullet_img = pygame.image.load('assets/projectile.png').convert_alpha()
+bullet_img = pygame.transform.smoothscale(bullet_img, (20, 20))
+
 enemy_img = pygame.image.load('assets/enemy.png').convert_alpha()
 enemy_img = pygame.transform.smoothscale(enemy_img, (enemy_img.get_width()//2, enemy_img.get_height()//2))
 
@@ -30,6 +35,7 @@ def draw_sprite(image, pos, rotation, camera_pos):
 
 running = True
 while running:
+    target = p1 if client_id == 0 else p2
     dt = clock.tick(60) / 1000
     for event in pygame.event.get():
         if event.type == pygame.QUIT: running = False
@@ -39,13 +45,23 @@ while running:
         p1.update(dt)
         p2.update(dt)
 
-        world_data = net.send([
-            {"pos": [p1.pos.x, p1.pos.y], "rot": p1.rotation},
-            {"pos": [p2.pos.x, p2.pos.y], "rot": p2.rotation}
-        ])
+        keys = pygame.key.get_pressed()
+        shoot_input = keys[pygame.K_SPACE]
+
+        current_p = p1 if client_id == 0 else p2
+
+        payload = {
+            "p1": {"pos": [p1.pos.x, p1.pos.y], "rot": p1.rotation},
+            "p2": {"pos": [p2.pos.x, p2.pos.y], "rot": p2.rotation},
+            "shoot": shoot_input
+        }
+
+        world_data = net.send(payload)
     else:
         pygame.display.set_caption(f"Shooter game - Client {client_id} [PREVIEW]")
         world_data = net.send("get")
+        if world_data is None:
+            print("Network Buffer Overflow or Connection Issue!")
         if world_data:
             p1.pos.x, p1.pos.y = world_data["p1"]["pos"]
             p1.rotation = world_data["p1"]["rot"]
@@ -69,6 +85,10 @@ while running:
     if world_data:
         draw_sprite(player_img, p1.pos, p1.rotation, camera_pos)
         draw_sprite(player_img, p2.pos, p2.rotation, camera_pos)
+
+        if "projectiles" in world_data:
+            for proj in world_data["projectiles"]:
+                draw_sprite(bullet_img, proj["pos"], 0, camera_pos)
 
         for e in world_data["enemies"]:
             draw_sprite(enemy_img, e["pos"], e["rot"], camera_pos)
