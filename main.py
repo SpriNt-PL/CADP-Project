@@ -51,7 +51,8 @@ while running:
         current_p = p1 if client_id == 0 else p2
 
         payload = {
-            "player": {"pos": [current_p.pos.x, current_p.pos.y], "rot": current_p.rotation},
+            "p1": {"pos": [p1.pos.x, p1.pos.y], "rot": p1.rotation},
+            "p2": {"pos": [p2.pos.x, p2.pos.y], "rot": p2.rotation},
             "shoot": shoot_input
         }
 

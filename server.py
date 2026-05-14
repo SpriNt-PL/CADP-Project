@@ -92,8 +92,8 @@ def threaded_client(conn, client_id):
 
             received = json.loads(data)
             if received != "get":
-                p_key = "p1" if client_id == 0 else "p2"
-                world_state[p_key] = received["player"]
+                world_state["p1"] = received["p1"]
+                world_state["p2"] = received["p2"]
 
                 # Check for shooting
                 if received.get("shoot"):
