@@ -68,6 +68,7 @@ while running:
             p2.pos.x, p2.pos.y = world_data["p2"]["pos"]
             p2.rotation = world_data["p2"]["rot"]
 
+    # Handling events connected with server functioning
     if world_data is None:
         print("Connection with the server lost")
         running = False
@@ -75,6 +76,11 @@ while running:
 
     if world_data.get("game_over"):
         print("Second player left. End of the game")
+        running = False
+        continue
+
+    if world_data.get("server_shutdown"):
+        print("The server was shut down.")
         running = False
         continue
 
