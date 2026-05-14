@@ -26,7 +26,8 @@ world_state = {
         {"pos": [1800, 100], "rot": 0},
         {"pos": [1000, 1800], "rot": 0}
     ],
-    "projectiles": []
+    "projectiles": [],
+    "game_over": False
 }
 
 
@@ -103,8 +104,11 @@ def threaded_client(conn, client_id):
                         last_shot_time[client_id] = now
 
             conn.sendall(str.encode(json.dumps(world_state)))
-        except:
+        except: 
             break
+
+    print(f"Player {client_id} left. Closing session...")
+    world_state["game_over"] = True
     conn.close()
 
 
