@@ -79,6 +79,10 @@ while running:
 
     # Handling events connected with server functioning
     if world_data and not world_data.get("game_started"):
+        
+        if not world_data["p1"]["ready"] and not world_data["p2"]["ready"]:
+            my_ready_status = False
+
         screen.fill((30, 30, 30))
         font = pygame.font.SysFont("Arial", 32)
         
@@ -100,11 +104,6 @@ while running:
 
     if world_data is None:
         print("Connection with the server lost")
-        running = False
-        continue
-
-    if world_data.get("game_over"):
-        print("Second player left. End of the game")
         running = False
         continue
 

@@ -34,6 +34,24 @@ world_state = {
     "game_started": False
 }
 
+slots = {
+    0: False, 
+    1: False
+}
+
+def reset_map():
+    global server_projectiles
+    world_state["enemies"] = [
+        {"pos": [100, 100], "rot": 0},
+        {"pos": [1800, 100], "rot": 0},
+        {"pos": [1000, 1800], "rot": 0}
+    ]
+    world_state["projectiles"] = []
+    server_projectiles = []
+    world_state["game_started"] = False
+    world_state["p1"]["ready"] = False
+    world_state["p2"]["ready"] = False
+
 
 # Handling enemy AI
 def enemy_ai_logic():
@@ -114,18 +132,27 @@ def threaded_client(conn, client_id):
                     world_state["game_started"] = True
 
                 # Check for shooting
-                if received.get("shoot"):
-                    now = pygame.time.get_ticks()
-                    if now - last_shot_time[client_id] > 500:
-                        spawn_projectile(client_id)
-                        last_shot_time[client_id] = now
+                if world_state["game_started"]:
+                    if received.get("shoot"):
+                        now = pygame.time.get_ticks()
+                        if now - last_shot_time[client_id] > 500:
+                            spawn_projectile(client_id)
+                            last_shot_time[client_id] = now
 
             conn.sendall(str.encode(json.dumps(world_state)))
         except: 
             break
 
-    print(f"Player {client_id} left. Closing session...")
-    world_state["game_over"] = True
+    print(f"Player {client_id} left. Freeing slot...")
+    slots[client_id] = False
+
+    p_key = "p1" if client_id == 0 else "p2"
+    world_state[p_key]["ready"] = False
+
+    if world_state["game_started"]:
+        print("Game aborted. Returning remaining player to lobby.")
+        reset_map()
+    
     conn.close()
 
 
@@ -174,8 +201,18 @@ try:
     while True:
         try:
             conn, addr = s.accept()
-            threading.Thread(target=threaded_client, args=(conn, curr_id)).start()
-            curr_id += 1
+
+            free_slot = None
+            if not slots[0]: free_slot = 0
+            elif not slots[1]: free_slot = 1
+
+            if free_slot is not None:
+                slots[free_slot] = True
+                threading.Thread(target=threaded_client, args=(conn, free_slot)).start()
+            else:
+                # Reject connection if all slots are occupied
+                print("Server full. Connection rejected.")
+                conn.close()
         except socket.timeout:
             continue
 except KeyboardInterrupt:
