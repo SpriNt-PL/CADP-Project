@@ -34,11 +34,19 @@ def draw_sprite(image, pos, rotation, camera_pos):
     screen.blit(rotated, rect)
 
 running = True
+my_ready_status = False
+
 while running:
     target = p1 if client_id == 0 else p2
     dt = clock.tick(60) / 1000
+
+    # Handling events
     for event in pygame.event.get():
         if event.type == pygame.QUIT: running = False
+
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_r:
+                my_ready_status = True
 
     if pygame.key.get_focused():
         pygame.display.set_caption(f"Shooter game - Client {client_id} [ACTIVE]")
@@ -53,7 +61,8 @@ while running:
         payload = {
             "p1": {"pos": [p1.pos.x, p1.pos.y], "rot": p1.rotation},
             "p2": {"pos": [p2.pos.x, p2.pos.y], "rot": p2.rotation},
-            "shoot": shoot_input
+            "shoot": shoot_input,
+            "ready_press": my_ready_status
         }
 
         world_data = net.send(payload)
@@ -71,10 +80,21 @@ while running:
     # Handling events connected with server functioning
     if world_data and not world_data.get("game_started"):
         screen.fill((30, 30, 30))
-        font = pygame.font.SysFont("Arial", 48)
-        text = font.render(f"Waiting for second player...", True, (255, 255, 255))
-        text_rect = text.get_rect(center=(constants.WINDOW_WIDTH // 2, constants.WINDOW_HEIGHT // 2))
-        screen.blit(text, text_rect)
+        font = pygame.font.SysFont("Arial", 32)
+        
+        p1_status = "READY" if world_data["p1"]["ready"] else "NOT READY"
+        p2_status = "READY" if world_data["p2"]["ready"] else "NOT READY"
+        
+        title = font.render("LOBBY - Waiting for players", True, (255, 255, 255))
+        instr = font.render("Press 'R' to confirm readiness", True, (200, 200, 200))
+        status1 = font.render(f"Player 1: {p1_status}", True, (0, 255, 0) if world_data["p1"]["ready"] else (255, 0, 0))
+        status2 = font.render(f"Player 2: {p2_status}", True, (0, 255, 0) if world_data["p2"]["ready"] else (255, 0, 0))
+        
+        screen.blit(title, (constants.WINDOW_WIDTH//2 - 150, 200))
+        screen.blit(instr, (constants.WINDOW_WIDTH//2 - 170, 250))
+        screen.blit(status1, (constants.WINDOW_WIDTH//2 - 100, 350))
+        screen.blit(status2, (constants.WINDOW_WIDTH//2 - 100, 400))
+        
         pygame.display.update()
         continue
 

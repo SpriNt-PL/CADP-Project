@@ -21,8 +21,8 @@ server_projectiles = []
 
 # Dictionary storing all positions and rotations of players and enemy
 world_state = {
-    "p1": {"pos": [300, 400], "rot": 0},
-    "p2": {"pos": [500, 400], "rot": 0},
+    "p1": {"pos": [300, 400], "rot": 0, "ready": False},
+    "p2": {"pos": [500, 400], "rot": 0, "ready": False},
     "enemies": [
         {"pos": [100, 100], "rot": 0},
         {"pos": [1800, 100], "rot": 0},
@@ -97,8 +97,21 @@ def threaded_client(conn, client_id):
 
             received = json.loads(data)
             if received != "get":
-                world_state["p1"] = received["p1"]
-                world_state["p2"] = received["p2"]
+                p_key = "p1" if client_id == 0 else "p2"
+
+                # Updating user position
+                world_state["p1"]["pos"] = received["p1"]["pos"]
+                world_state["p1"]["rot"] = received["p1"]["rot"]
+                world_state["p2"]["pos"] = received["p2"]["pos"]
+                world_state["p2"]["rot"] = received["p2"]["rot"]
+
+                # Sends flag "ready_press"
+                if received.get("ready_press"):
+                    world_state[p_key]["ready"] = True
+
+                # Checks whether both players are ready
+                if world_state["p1"]["ready"] and world_state["p2"]["ready"]:
+                    world_state["game_started"] = True
 
                 # Check for shooting
                 if received.get("shoot"):
@@ -163,10 +176,6 @@ try:
             conn, addr = s.accept()
             threading.Thread(target=threaded_client, args=(conn, curr_id)).start()
             curr_id += 1
-
-            if curr_id >= 2:
-                world_state["game_started"] = True
-                print("Both players connected. Game starting!")
         except socket.timeout:
             continue
 except KeyboardInterrupt:
