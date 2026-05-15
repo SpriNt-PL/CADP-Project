@@ -78,7 +78,7 @@ while running:
             p2.pos.x, p2.pos.y = world_data["p2"]["pos"]
             p2.rotation = world_data["p2"]["rot"]
 
-    # Handling events connected with server functioning
+    # Handling the lobby screen
     if world_data and not world_data.get("game_started"):
         
         if not world_data["p1"]["ready"] and not world_data["p2"]["ready"]:
