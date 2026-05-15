@@ -142,13 +142,16 @@ def threaded_client(conn, client_id):
             conn.sendall(str.encode(json.dumps(world_state)))
         except: 
             break
-
+    
+    # Release slot if player disconnected
     print(f"Player {client_id} left. Freeing slot...")
     slots[client_id] = False
 
+    # Change world state if player disconnected
     p_key = "p1" if client_id == 0 else "p2"
     world_state[p_key]["ready"] = False
 
+    # Initiate game reset
     if world_state["game_started"]:
         print("Game aborted. Returning remaining player to lobby.")
         reset_map()
@@ -206,11 +209,11 @@ try:
             if not slots[0]: free_slot = 0
             elif not slots[1]: free_slot = 1
 
+            # Accept player if there is a free slot. If not reject connection
             if free_slot is not None:
                 slots[free_slot] = True
                 threading.Thread(target=threaded_client, args=(conn, free_slot)).start()
             else:
-                # Reject connection if all slots are occupied
                 print("Server full. Connection rejected.")
                 conn.close()
         except socket.timeout:

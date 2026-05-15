@@ -48,6 +48,7 @@ while running:
             if event.key == pygame.K_r:
                 my_ready_status = True
 
+    # Handle windows with ACTIVE and PREVIEW states differently
     if pygame.key.get_focused():
         pygame.display.set_caption(f"Shooter game - Client {client_id} [ACTIVE]")
         p1.update(dt)
@@ -101,12 +102,14 @@ while running:
         
         pygame.display.update()
         continue
-
+    
+    # Shutdown client when he loses the connection with server
     if world_data is None:
         print("Connection with the server lost")
         running = False
         continue
-
+    
+    # Shutdown client when the server is closed
     if world_data.get("server_shutdown"):
         print("The server was shut down.")
         running = False
@@ -116,6 +119,8 @@ while running:
     camera_pos = pygame.Vector2(target.pos.x - 600, target.pos.y - 400)
 
     screen.fill((61, 61, 59))
+
+    # Drawing sprites the the screen
     if world_data:
         draw_sprite(player_img, p1.pos, p1.rotation, camera_pos)
         draw_sprite(player_img, p2.pos, p2.rotation, camera_pos)
