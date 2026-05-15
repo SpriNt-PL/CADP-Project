@@ -30,7 +30,8 @@ world_state = {
     ],
     "projectiles": [],
     "game_over": False,
-    "server_shutdown": False
+    "server_shutdown": False,
+    "game_started": False
 }
 
 
@@ -162,6 +163,10 @@ try:
             conn, addr = s.accept()
             threading.Thread(target=threaded_client, args=(conn, curr_id)).start()
             curr_id += 1
+
+            if curr_id >= 2:
+                world_state["game_started"] = True
+                print("Both players connected. Game starting!")
         except socket.timeout:
             continue
 except KeyboardInterrupt:

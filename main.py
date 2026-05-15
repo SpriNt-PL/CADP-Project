@@ -69,6 +69,15 @@ while running:
             p2.rotation = world_data["p2"]["rot"]
 
     # Handling events connected with server functioning
+    if world_data and not world_data.get("game_started"):
+        screen.fill((30, 30, 30))
+        font = pygame.font.SysFont("Arial", 48)
+        text = font.render(f"Waiting for second player...", True, (255, 255, 255))
+        text_rect = text.get_rect(center=(constants.WINDOW_WIDTH // 2, constants.WINDOW_HEIGHT // 2))
+        screen.blit(text, text_rect)
+        pygame.display.update()
+        continue
+
     if world_data is None:
         print("Connection with the server lost")
         running = False
